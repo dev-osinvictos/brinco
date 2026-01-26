@@ -4,7 +4,18 @@ const { Pool } = require("pg");
 
 const port = process.env.PORT || 3000;
 const dbUrl = process.env.DATABASE_URL;
-const frontendOrigin = process.env.FRONTEND_ORIGIN || "*";
+function sanitizeOrigin(value) {
+  if (!value) return "*";
+  // Remove aspas e espaços extras comuns em envs coladas da interface
+  var cleaned = value.trim().replace(/^["']|["']$/g, "");
+  // Header não aceita espaços/novas linhas; se vier múltiplos, pega o primeiro
+  if (cleaned.indexOf(",") !== -1) {
+    cleaned = cleaned.split(",")[0].trim();
+  }
+  return cleaned || "*";
+}
+
+const frontendOrigin = sanitizeOrigin(process.env.FRONTEND_ORIGIN);
 
 if (!dbUrl) {
   console.error("DATABASE_URL não definido.");
