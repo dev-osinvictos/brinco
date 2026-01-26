@@ -4,18 +4,24 @@ const { Pool } = require("pg");
 
 const port = process.env.PORT || 3000;
 const dbUrl = process.env.DATABASE_URL;
-function sanitizeOrigin(value) {
-  if (!value) return "*";
-  // Remove aspas e espaços extras comuns em envs coladas da interface
+function parseOrigins(value) {
+  if (!value) return ["*"];
   var cleaned = value.trim().replace(/^["']|["']$/g, "");
-  // Header não aceita espaços/novas linhas; se vier múltiplos, pega o primeiro
-  if (cleaned.indexOf(",") !== -1) {
-    cleaned = cleaned.split(",")[0].trim();
-  }
-  return cleaned || "*";
+  if (!cleaned) return ["*"];
+  return cleaned.split(",").map(function (item) {
+    return item.trim().replace(/^["']|["']$/g, "");
+  }).filter(Boolean);
 }
 
-const frontendOrigin = sanitizeOrigin(process.env.FRONTEND_ORIGIN);
+const allowedOrigins = parseOrigins(process.env.FRONTEND_ORIGIN);
+
+function resolveOrigin(requestOrigin) {
+  if (allowedOrigins.indexOf("*") !== -1) return "*";
+  if (requestOrigin && allowedOrigins.indexOf(requestOrigin) !== -1) {
+    return requestOrigin;
+  }
+  return allowedOrigins[0] || "*";
+}
 
 if (!dbUrl) {
   console.error("DATABASE_URL não definido.");
@@ -24,18 +30,19 @@ if (!dbUrl) {
 
 let pool;
 
-function sendJson(res, status, payload) {
+function sendJson(res, status, payload, requestOrigin) {
   res.writeHead(status, {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": frontendOrigin,
+    "Access-Control-Allow-Origin": resolveOrigin(requestOrigin),
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
   });
   res.end(JSON.stringify(payload));
 }
 
-function notFound(res) {
-  sendJson(res, 404, { error: "Not found" });
+function notFound(res, requestOrigin) {
+  sendJson(res, 404, { error: "Not found" }, requestOrigin);
 }
 
 async function getCount(docId) {
@@ -75,40 +82,40 @@ async function start() {
   });
 
   const server = http.createServer(async (req, res) => {
-    if (req.method === "OPTIONS") {
-      sendJson(res, 204, {});
-      return;
-    }
+  if (req.method === "OPTIONS") {
+    sendJson(res, 204, {}, req.headers.origin);
+    return;
+  }
 
-    if (req.url === "/health") {
-      sendJson(res, 200, { ok: true });
-      return;
-    }
+  if (req.url === "/health") {
+    sendJson(res, 200, { ok: true }, req.headers.origin);
+    return;
+  }
 
     const match = req.url.match(/^\/likes\/([^/?#]+)/);
-    if (!match) {
-      notFound(res);
-      return;
-    }
+  if (!match) {
+    notFound(res, req.headers.origin);
+    return;
+  }
 
     const docId = decodeURIComponent(match[1]);
     try {
-      if (req.method === "GET") {
-        const count = await getCount(docId);
-        sendJson(res, 200, { docId, count });
-        return;
-      }
-      if (req.method === "POST") {
-        const count = await incrementCount(docId);
-        sendJson(res, 200, { docId, count });
-        return;
-      }
-      sendJson(res, 405, { error: "Method not allowed" });
-    } catch (err) {
-      console.error(err);
-      sendJson(res, 500, { error: "Server error" });
+    if (req.method === "GET") {
+      const count = await getCount(docId);
+      sendJson(res, 200, { docId, count }, req.headers.origin);
+      return;
     }
-  });
+    if (req.method === "POST") {
+      const count = await incrementCount(docId);
+      sendJson(res, 200, { docId, count }, req.headers.origin);
+      return;
+    }
+    sendJson(res, 405, { error: "Method not allowed" }, req.headers.origin);
+  } catch (err) {
+    console.error(err);
+    sendJson(res, 500, { error: "Server error" }, req.headers.origin);
+  }
+});
 
   server.listen(port, () => {
     console.log(`API listening on ${port}`);
