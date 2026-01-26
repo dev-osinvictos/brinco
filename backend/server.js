@@ -1,4 +1,5 @@
 const http = require("http");
+const dns = require("dns").promises;
 const { Pool } = require("pg");
 
 const port = process.env.PORT || 3000;
@@ -10,12 +11,7 @@ if (!dbUrl) {
   process.exit(1);
 }
 
-const pool = new Pool({
-  connectionString: dbUrl,
-  // Render pode não ter IPv6; força IPv4 para o host do Postgres.
-  family: 4,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-});
+let pool;
 
 function sendJson(res, status, payload) {
   res.writeHead(status, {
@@ -49,42 +45,63 @@ async function incrementCount(docId) {
   return result.rows[0].count;
 }
 
-const server = http.createServer(async (req, res) => {
-  if (req.method === "OPTIONS") {
-    sendJson(res, 204, {});
-    return;
-  }
-
-  if (req.url === "/health") {
-    sendJson(res, 200, { ok: true });
-    return;
-  }
-
-  const match = req.url.match(/^\/likes\/([^/?#]+)/);
-  if (!match) {
-    notFound(res);
-    return;
-  }
-
-  const docId = decodeURIComponent(match[1]);
+async function start() {
+  let resolvedHost = "";
   try {
-    if (req.method === "GET") {
-      const count = await getCount(docId);
-      sendJson(res, 200, { docId, count });
-      return;
-    }
-    if (req.method === "POST") {
-      const count = await incrementCount(docId);
-      sendJson(res, 200, { docId, count });
-      return;
-    }
-    sendJson(res, 405, { error: "Method not allowed" });
+    const host = new URL(dbUrl).hostname;
+    const lookup = await dns.lookup(host, { family: 4 });
+    resolvedHost = lookup.address;
   } catch (err) {
-    console.error(err);
-    sendJson(res, 500, { error: "Server error" });
+    console.warn("Falha ao resolver IPv4, usando host original:", err.message);
   }
-});
 
-server.listen(port, () => {
-  console.log(`API listening on ${port}`);
-});
+  pool = new Pool({
+    connectionString: dbUrl,
+    // Render pode não ter IPv6; força IPv4 para o host do Postgres.
+    host: resolvedHost || undefined,
+    family: 4,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  });
+
+  const server = http.createServer(async (req, res) => {
+    if (req.method === "OPTIONS") {
+      sendJson(res, 204, {});
+      return;
+    }
+
+    if (req.url === "/health") {
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    const match = req.url.match(/^\/likes\/([^/?#]+)/);
+    if (!match) {
+      notFound(res);
+      return;
+    }
+
+    const docId = decodeURIComponent(match[1]);
+    try {
+      if (req.method === "GET") {
+        const count = await getCount(docId);
+        sendJson(res, 200, { docId, count });
+        return;
+      }
+      if (req.method === "POST") {
+        const count = await incrementCount(docId);
+        sendJson(res, 200, { docId, count });
+        return;
+      }
+      sendJson(res, 405, { error: "Method not allowed" });
+    } catch (err) {
+      console.error(err);
+      sendJson(res, 500, { error: "Server error" });
+    }
+  });
+
+  server.listen(port, () => {
+    console.log(`API listening on ${port}`);
+  });
+}
+
+start();
