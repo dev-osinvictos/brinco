@@ -12,6 +12,8 @@ if (!dbUrl) {
 
 const pool = new Pool({
   connectionString: dbUrl,
+  // Render pode não ter IPv6; força IPv4 para o host do Postgres.
+  family: 4,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
