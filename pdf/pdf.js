@@ -8,7 +8,7 @@
     return;
   }
 
-  var apiBase = "https://brincodeourovivo.onrender.com";
+  var apiBase = window.API_BASE || document.body.getAttribute("data-api-base") || "https://brincodeourovivo.onrender.com";
   if (window.location.hostname === "localhost") {
     apiBase = "http://localhost:3000";
   }
