@@ -119,3 +119,38 @@ header h1 {
   border: none;
   background: #fff;
 }
+
+
+.doc-body {
+  display: block;
+}
+
+.doc-content {
+  display: none;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  line-height: 1.6;
+  background: #0e1712;
+}
+
+.doc-content p {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  color: #f4f2e9;
+}
+
+.doc-note {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 720px) {
+  .pdf-frame {
+    display: none;
+  }
+  .doc-content {
+    display: block;
+  }
+}
