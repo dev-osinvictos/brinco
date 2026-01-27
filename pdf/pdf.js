@@ -41,6 +41,43 @@
 
   fetchCount();
 
+
+  var coverBtn = document.getElementById("coverBtn");
+  var coverModal = document.getElementById("coverModal");
+
+  function openCover() {
+    if (!coverModal) return;
+    coverModal.classList.add("open");
+    coverModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeCover() {
+    if (!coverModal) return;
+    coverModal.classList.remove("open");
+    coverModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  }
+
+  if (coverBtn && coverModal) {
+    coverBtn.addEventListener("click", function () {
+      openCover();
+    });
+
+    coverModal.addEventListener("click", function (event) {
+      var target = event.target;
+      if (target && target.hasAttribute("data-modal-close")) {
+        closeCover();
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && coverModal.classList.contains("open")) {
+        closeCover();
+      }
+    });
+  }
+
   if (menuToggle && nav) {
     menuToggle.addEventListener("click", function () {
       var isOpen = nav.classList.toggle("open");

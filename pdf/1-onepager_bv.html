@@ -23,7 +23,7 @@
       <a href="1-whitepaper-brinco.html">Whitepaper</a>
     </nav>
     <div class="actions">
-          <a class="btn secondary" href="#capa">Capa</a>
+          <button class="btn secondary" id="coverBtn" type="button">Capa</button>
 <button class="btn" id="likeBtn">Curtir</button>
       <span class="count" id="likeCount">0 curtidas</span>
       <button class="btn secondary" id="shareBtn">Compartilhar</button>
@@ -51,5 +51,14 @@
   </main>
 <script src="config.js"></script>
   <script src="pdf.js"></script>
+
+  <div class="modal" id="coverModal" role="dialog" aria-hidden="true" aria-label="Capa ilustrativa">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-content" role="document">
+      <button class="modal-close" type="button" data-modal-close aria-label="Fechar">×</button>
+      <img src="../img/background.png" alt="Capa ilustrativa">
+    </div>
+  </div>
+
 </body>
 </html>
