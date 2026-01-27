@@ -154,3 +154,21 @@ header h1 {
     display: block;
   }
 }
+
+
+.doc-cover {
+  margin: 0 0 18px;
+}
+
+.doc-cover img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.doc-cover figcaption {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
