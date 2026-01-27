@@ -34,17 +34,9 @@
   });
 
   shareBtn.addEventListener("click", function () {
-    var url = window.location.href;
-    if (navigator.share) {
-      navigator.share({ title: document.title, url: url });
-      return;
-    }
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      alert("Link copiado!");
-      return;
-    }
-    prompt("Copie o link:", url);
+    var url = "https://brincodeourovivo.com.br";
+    var fbUrl = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url);
+    window.open(fbUrl, "_blank", "noopener,noreferrer");
   });
 
   fetchCount();
