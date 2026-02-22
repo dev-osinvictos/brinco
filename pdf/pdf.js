@@ -11,6 +11,13 @@
       return;
     }
 
+    var startCounts = {
+      "1-businessplan_bv": 223,
+      "1-onepager_bv": 117,
+      "1-storytelling_bv": 325,
+      "1-whitepaper-brinco": 80,
+    };
+
     var apiBase = window.API_BASE || document.body.getAttribute("data-api-base") || "https://brincodeourovivo.onrender.com";
     if (window.location.hostname === "localhost") {
       apiBase = "http://localhost:3000";
@@ -20,11 +27,19 @@
       countEl.textContent = n + " curtidas";
     }
 
+    function getStartCount() {
+      return Object.prototype.hasOwnProperty.call(startCounts, docId)
+        ? startCounts[docId]
+        : 0;
+    }
+
+    setCount(getStartCount());
+
     function fetchCount() {
       fetch(apiBase + "/likes/" + encodeURIComponent(docId))
         .then(function (res) { return res.json(); })
-        .then(function (data) { setCount(data.count || 0); })
-        .catch(function () { setCount(0); });
+        .then(function (data) { setCount(typeof data.count === "number" ? data.count : getStartCount()); })
+        .catch(function () { setCount(getStartCount()); });
     }
 
     likeBtn.addEventListener("click", function () {
