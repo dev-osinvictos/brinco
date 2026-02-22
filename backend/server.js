@@ -29,6 +29,18 @@ if (!dbUrl) {
 }
 
 let pool;
+const seedCounts = {
+  "1-businessplan_bv": 226,
+  "1-onepager_bv": 118,
+  "1-storytelling_bv": 326,
+  "1-whitepaper-brinco": 81,
+};
+
+function getSeedCount(docId) {
+  return Object.prototype.hasOwnProperty.call(seedCounts, docId)
+    ? seedCounts[docId]
+    : 0;
+}
 
 function sendJson(res, status, payload, requestOrigin) {
   res.writeHead(status, {
@@ -50,15 +62,16 @@ async function getCount(docId) {
     "SELECT count FROM likes WHERE doc_id = $1",
     [docId]
   );
-  return result.rows[0] ? result.rows[0].count : 0;
+  return result.rows[0] ? result.rows[0].count : getSeedCount(docId);
 }
 
 async function incrementCount(docId) {
+  const seed = getSeedCount(docId);
   const result = await pool.query(
-    "INSERT INTO likes (doc_id, count) VALUES ($1, 1) " +
+    "INSERT INTO likes (doc_id, count) VALUES ($1, $2) " +
       "ON CONFLICT (doc_id) DO UPDATE SET count = likes.count + 1, updated_at = now() " +
       "RETURNING count",
-    [docId]
+    [docId, seed + 1]
   );
   return result.rows[0].count;
 }
